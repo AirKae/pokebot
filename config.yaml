@@ -1,0 +1,134 @@
+# ============================================================
+#  Configuration de PokeBot
+# ============================================================
+# Le webhook Discord se met de préférence dans un "secret" GitHub
+# nommé DISCORD_WEBHOOK (voir README). Pour un test sur ton PC,
+# tu peux aussi le coller ici :
+discord_webhook: ""
+
+# Texte ajouté aux alertes, ex. "@here" pour notifier tout le salon
+mention: "@here"
+
+# Seuls les produits dont le nom ou le lien contient ce motif
+# sont signalés dans les recherches (regex, insensible à la casse)
+filtre_nom: "pok[eé]mon"
+
+# ------------------------------------------------------------
+# Pour chaque magasin, toutes les sources sont optionnelles :
+#
+#   site:      adresse du site (sert à trouver les sitemaps)
+#   sitemaps:  ["auto"] -> lit robots.txt et surveille les sitemaps.
+#              Alerte dès qu'une page produit Pokémon est AJOUTÉE au site,
+#              souvent avant l'ouverture de la vente.
+#   filtre_sitemap: ne garder que les sitemaps dont l'URL contient ça
+#              (ex. "product") pour éviter de lire des milliers de pages
+#   shopify:   si le site est une boutique Shopify, son adresse
+#              -> tout le catalogue + stock en 1 requête (le plus fiable)
+#   api:       endpoint JSON du site repéré dans F12 > Réseau (voir README)
+#   recherches: page de recherche "pokemon" + motif_lien
+#   produits:  liens de pages produits précises
+#   suivi_auto: true  -> les produits découverts sont ajoutés
+#               automatiquement à la surveillance du stock
+#   max_suivi:  nombre max de produits suivis automatiquement (60)
+#   pause:      [min, max] secondes entre 2 requêtes au même site
+#   actif: false  pour désactiver le magasin
+# ------------------------------------------------------------
+magasins:
+
+  La Grande Récré:
+    site: "https://www.lagranderecre.fr"
+    sitemaps: ["auto"]
+
+  Carrefour:
+    site: "https://www.carrefour.fr"
+    sitemaps: ["auto"]
+    filtre_sitemap: "produ"
+
+  Philibert:
+    site: "https://www.philibertnet.com"
+    sitemaps: ["auto"]
+
+  Cultura:
+    site: "https://www.cultura.com"
+    sitemaps: ["auto"]
+    filtre_sitemap: "produ"
+
+  King Jouet:
+    site: "https://www.king-jouet.com"
+    sitemaps: ["auto"]
+
+  KingDultes:
+    site: "https://www.kingdultes.com"
+    sitemaps: ["auto"]
+
+  Leclerc:
+    site: "https://www.e.leclerc"
+    sitemaps: ["auto"]
+    filtre_sitemap: "produ"
+
+  Auchan:
+    site: "https://www.auchan.fr"
+    sitemaps: ["auto"]
+    filtre_sitemap: "produ"
+
+  Le Coin des Barons:
+    site: "https://www.lecoindesbarons.com"
+    sitemaps: ["auto"]
+    # Si --doctor montre que c'est une boutique Shopify, décommente :
+    # shopify: "https://www.lecoindesbarons.com"
+
+# Exemple de source "api" (à adapter après repérage dans F12 > Réseau) :
+#  Cultura:
+#    api:
+#      - url: "https://.../search?query=pokemon"
+#        liste: "data.products"      # où se trouve la liste dans le JSON
+#        champ_nom: "name"
+#        champ_url: "url"
+#        champ_dispo: "stock.status"
+#        valeurs_en_stock: ["IN_STOCK", "AVAILABLE"]
+#        base_url: "https://www.cultura.com"
+
+  Fnac:
+    site: "https://www.fnac.com"
+    recherches:
+      - url: "https://www.fnac.com/SearchResult/ResultList.aspx?Search=pokemon+cartes"
+        motif_lien: '/a[0-9]+/'
+    campagnes:
+      mode: formulaire
+      pages: ["https://animation.fnac.com/zn/5dep5kjf6"]
+      index: "https://radarstock.fr/pokemon/tirages/"
+      motifs: ['https://animation\.fnac\.com/zn/[a-z0-9]+/?']
+
+  Micromania:
+    site: "https://www.micromania.fr"
+    sitemaps: ["auto"]
+    campagnes:
+      mode: formulaire
+      index: "https://radarstock.fr/pokemon/tirages/"
+      motifs: ['https://www\.micromania\.fr/inscription-vente-reservee-[a-z0-9]+\.html']
+
+  Amazon:
+    site: "https://www.amazon.fr"
+    recherches:
+      - url: "https://www.amazon.fr/s?k=coffret+cartes+pokemon"
+        motif_lien: '/dp/[A-Z0-9]{10}'
+    campagnes:
+      catalogue_amazon: "https://maptcg.com/invitations"
+      mode: invitation
+      pages: []  # facultatif : URL Amazon.fr/dp/ASIN à épingler
+
+# Centre-ville approximatif, distances à vol d'oiseau.
+zone:
+  centre: [48.802, 2.438]
+  codes_postaux: ["94700", "94000", "94012", "94320", "94260"]
+  rayon_km: 10
+  villes_incluses: [Maisons-Alfort, Créteil, Thiais, Fresnes]
+
+# Pages produit affichant une ligne par magasin avec son nom ET sa disponibilité.
+# Voir la section « Stock local » du README avant d'ajouter une source.
+stocks_locaux: []
+
+calendriers:
+  - url: "https://radarstock.fr/calendrier/pokemon/"
+    liens_css: 'main a[href^="/pokemon/"]'
+    motif: 'https://radarstock\.fr/pokemon/[^/?#]+/'

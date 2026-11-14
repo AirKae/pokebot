@@ -1,0 +1,58 @@
+name: PokeBot
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # toutes les 5 min (GitHub peut retarder de quelques minutes)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Action à exécuter
+        type: choice
+        default: test-discord
+        options:
+          - test-discord
+          - diagnostic
+          - surveillance
+
+permissions:
+  contents: write            # pour sauvegarder state.json dans le dépôt
+
+concurrency:
+  group: pokebot
+  cancel-in-progress: false
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Vérifier les stocks
+        env:
+          MODE: ${{ inputs.mode }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_INSTORE_CHANNEL_IDS: ${{ secrets.DISCORD_INSTORE_CHANNEL_IDS }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          INSTORE_FEED_URL: ${{ secrets.INSTORE_FEED_URL }}
+          INSTORE_FEED_TOKEN: ${{ secrets.INSTORE_FEED_TOKEN }}
+          DISCORD_OWNER_ID: ${{ secrets.DISCORD_OWNER_ID }}
+        run: |
+          case "$MODE" in
+            diagnostic) python monitor.py --doctor ;;
+            test-discord) python monitor.py --test-discord ;;
+            *) test -n "$DISCORD_WEBHOOK" || { echo "Secret DISCORD_WEBHOOK manquant"; exit 1; }
+               python monitor.py ;;
+          esac
+      - name: Sauvegarder l'état
+        if: github.event_name == 'schedule' || inputs.mode == 'surveillance'
+        run: |
+          git config user.name "pokebot"
+          git config user.email "pokebot@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || (git commit -m "maj état" && git push)
